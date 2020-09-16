@@ -1,128 +1,36 @@
-Setting up the backend
+Authentication
 
-https://medium.com/codingthesmartway-com-blog/the-mern-stack-tutorial-building-a-react-crud-application-from-start-to-finish-part-2-637f337e5d61
+first create a user model -> in models folder and create user.model.js inside.
+we also need to update the todo model to link to each user.
 
-create a folder(or shift the frontend into a new folder)
-
-go into that folder
-
-Create a package.json file:
-npm init -y
-
-Add depedencies(omitted body-parser)
-npm install express express cors mongoose
-
-express: Express is a fast and lightweight web framework for Node.js. Express is an essential part of the MERN stack.
-body-parser: Node.js body parsing middleware. ( bodyParser was added back to Express since 4.16.0 so can skip this and use app.use(express.json()) instead)
-cors: CORS is a node.js package for providing an Express middleware that can be used to enable CORS with various options. Cross-origin resource sharing (CORS) is a mechanism that allows restricted resources on a web page to be requested from another domain outside the domain from which the first resource was served.
-mongoose: A Node.js framework which lets us access MongoDB in an object-oriented way.
-
-already done on this machine, installing nodemon
-npm install -g nodemon
-
-create a server.js/app.js to make an express server
-
-//update this in next version of todo
-the guide just wrote the PORT of the app.js/server.js itself but we can hide it in the .env file and run
-npm i dotenv -> then require('dotenv').config() 
-/*note that we do not need to assign a const xxx = require('dotenv').config() to it */
-to use what we defined in the .env, just added the word process.env. infront of it
-e.g. in .env: 
-DB_HOST=localhost
-DB_USER=root
-DB_PASS=s1mpl3
-
-in app.js:
-const db = require('db')
-db.connect({
-  host: process.env.DB_HOST,
-  username: process.env.DB_USER,
-  password: process.env.DB_PASS
-})
-
-now we need to create a database, mongodb in this case
-already installed node.js and mongodb,
-so just run npm install mongoose
-
-then make a folder called data to be used by mongodb
-
-//then add the following into app.js(to make the mongodb connection) -> can shift this to a new file too (e.g. db.js in config folder)
-
-const mongoose = require('mongoose');
-// connect to mongoose
-mongoose.connect(
-	process.env.MONGODB, // go to .env to get the MONGODB
-	{
-		useCreateIndex     : true,
-		useNewUrlParser    : true,
-		useUnifiedTopology : true
-	},
-	(err) => {
-		if (err) throw err; // if there are err display error
-		console.log('mongodb connected!'); //say tat mongodb is connected if no err
-	}
-);
-
-Then create a mongoose schema in a oop way -> create a models folder and create todo.model.js inside
-note that mongoose auto help us add an id so we do not need to specify the id field.
 // when doing authentication -> add in a user model and link user to each todo by using a 
 createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
 }
 
-We can then implement the server endpoints, where basically we specify routes/endpoints.
-when we go to that url -> the server goes to that endpoint and perform those instructions
-to setup express router:
-const todoRoutes = express.Router();
+in user model we have 2 fields, a phone number/email and password
 
-//this adds the router as a middleware and handles all requests with path: /todos
-app.use('/todos', todoRoutes)
+-> we can do the hashing in the register route
+we need to hash the password before saving -> need to npm i bcrypt,jsonwebtoken on node, app.js
 
-After setting up all the endpoints/routes, we test them with postman
-first try adding an item:
-POST http://localhost:3100/todos/add
-raw->json-> (need to match todo.model.js and key needs to be in string)
-{
-  "todo_text": "test 1"
-}
-->gets back the successful message so we know it works
+we then go to app.js to add the register and login routes
 
-then try the get request
-GET http://localhost:3100/todos
-[
-    {
-        "_id": "5f6023f9e2f35645ac7165b2",
-        "todo_text": "test 1",
-        "__v": 0
-    }
-]
-note that a unique _id is generated for each new todo
-__v is the versionKey which mongoose sets for each newly created item. this contains the internal revision of the document
-
-now we can test obtaining a single todo based on its id
-GET http://localhost:3100/todos/5f6023f9e2f35645ac7165b2
-{
-    "_id": "5f6023f9e2f35645ac7165b2",
-    "todo_text": "test 1",
-    "__v": 0
-}
-
-we can then try updating a todo
-POST http://localhost:3100/todos/update/5f6023f9e2f35645ac7165b2
-{
-    "todo_text": "test 1 now 2"
-}
-gets back updated message
-//if not sure whats wrong with the update, can try console.log(req.body) in the post request
-
-we can then try deleting a todo
-DELETE http://localhost:3100/todos/5f6023f9e2f35645ac7165b2
-gets back Todo was deleted successfully -> it should no longer be there in the get all request
+For register: try the POST request
+POST http://localhost:3100//auth/register
 
 
-.status and .send/.json
-https://stackoverflow.com/questions/26066785/proper-way-to-set-response-status-and-json-content-in-a-rest-api-made-with-nodej
+For login: try the POST request
+POST http://localhost:3100//auth/login
+
+
+-> then do the axios calls to register, login and logout
+
+
+
+
+
+
 
 
 So now we need to connect the frontend to the backend (using axios calls)

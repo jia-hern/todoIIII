@@ -1,14 +1,9 @@
-## TodoIII
+## TodoIIII
 
-This is an add on to [todoII](https://github.com/jia-hern/todoII)
+This is an add on to [todoIII](https://github.com/jia-hern/todoIII)
 
-In this project we create the backend <br>
-The server is made with node express,<br>
-the data stored using mongoDB,<br>
-then tested with postman to ensure that these routes work:<br>
-(with a http://localhost:3100 as URL)<br>
-GET /todos/ ->retrieves all todo items<br>
-GET /todos/:id -> retrieves a single todo item by providing an id<br>
-POST /todos/add -> add new todo items<br>
-POST /todos/update/:id -> update an existing todo item<br>
-DELETE /todos/:id -> delete an existing todo item
+In this project we want to add authentication <br>
+So a new user can register and login<br>
+To do so, we need to include a new user model, a register and a login route<br>
+authentication will then be implemented in the frontend with jsonwebtoken<br>
+each user should just have accesss to his own todos<br>

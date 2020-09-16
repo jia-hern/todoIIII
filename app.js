@@ -3,6 +3,9 @@ const app = express();
 const cors = require("cors");
 const mongoose = require("mongoose");
 let Todo = require("./models/todo.model");
+let User = require("./models/user.model");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 //PORT and MONGODB can be shifted into .env file
 const PORT = 3100;
 MONGODB = "mongodb://localhost/todo";
@@ -29,6 +32,85 @@ mongoose.connect(
 //create instance of express router
 const todoRoutes = express.Router();
 //use router as middleware and handles all requests with path /todos (note /todos is added as a prefix to all other routes built on this)
+
+//---> to handle all the authentication routes
+//adds /auth as a prefix
+app.use("/auth", authRoutes);
+/*this endpoint allow a new user to register himself
+@route POST /auth/register
+@acess public
+*/
+authRoutes.post("/register", async (req, res) => {
+  //so that we do not need to use req.body.phone / req.body.password
+  let { phone, password } = req.body;
+  try {
+    console.log("this is in req.body", req.body);
+    let user = new User({ phone, password });
+    //hash the password with 10 salt rounds before saving
+    let hashPassword = await bcrypt.hash(password, 10);
+    user.password = hashPassword;
+    //save user
+    await user.save();
+    //we then create a token to use for jwt
+    const payload = {
+      //createa a token
+      user: {
+        id: user._id,
+      },
+    };
+    console.log("This is in the payload", payload);
+    //https://github.com/auth0/node-jsonwebtoken
+    //token is allowed to exist for 1 hour
+    jwt.sign(payload, "registertoken", { expiresIn: 3600 }, (err, token) => {
+      //throw the error if any
+      if (err) throw err;
+      //else we send the token(containing the user._id back)
+      res.status(200).json({ token });
+      console.log("Registered,the token was sent successfully");
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "user was not registered" });
+  }
+});
+/*this endpoint the user to login (provided that he already registered)
+@route POST /auth/login
+@acess public
+*/
+authRoutes.post("/login", async (req, res) => {
+  let { phone, password } = req.body;
+  try {
+    //find the user based on phone
+    let user = await User.findOne({ phone });
+    //check that the user exists
+    if (!user) {
+      return res.status(400).json({ message: "user not found" });
+    }
+    //compared keyed password with password in db
+    //refere to bcrypt.compare docs https://www.npmjs.com/package/bcrypt-> 1st params is password in plaintext, 2nd params is hash from db
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res
+        .status(400)
+        .json({ message: "Help! someone wants to hack us" });
+    }
+    //if hashed plaintext matches the hash in db, we return back a token
+    const payload = {
+      user: {
+        id: user._id,
+      },
+    };
+    //now we can use the token for jwt
+    jwt.sign(payload, "thistologin", { expiresIn: 3600 }, (err, token) => {
+      if (err) throw err;
+      res.status(200).json({ token });
+      console.log("Logged in,the token was sent successfully");
+    });
+  } catch (error) {
+    res.status(500).json({ message: "The login did not work" });
+  }
+});
+//---> to handle all the todo routes
 app.use("/todos", todoRoutes);
 
 //this endpoint delivers all available todos items
