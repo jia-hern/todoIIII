@@ -16,16 +16,12 @@ class Navigation extends Component {
         ) : (
           <React.Fragment>
             <Button>
-              <Link to="/login" className="nav-link" onClick={this.props.login}>
+              <Link to="/login" className="nav-link">
                 Login
               </Link>
             </Button>
             <Button>
-              <Link
-                to="/register"
-                className="navlink"
-                onClick={this.props.register}
-              >
+              <Link to="/register" className="navlink">
                 Register
               </Link>
             </Button>

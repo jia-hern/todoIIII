@@ -83,3 +83,18 @@ to load all the current todos we have stored in our database
 
 //need to make modifications to how new todos are created as when todos are created through mongoose they are given a _.id field, which when we first create on App.js itself, this field does not appear
 --> need to setState again after creating a new item
+
+
+
+Unhandled Rejection (TypeError): Cannot read property 'catch' of undefined
+(anonymous function)
+C:/Users/Ji/projects/Todo/todoIIII/running/src/App.js:164
+  161 | (res) => {
+  162 |   console.log("This is in res.data of registerHandler", res.data);
+  163 |   localStorage.setItem("token", res.data.token);
+> 164 |   this.setState({
+      | ^  165 |     isAuth: true,
+  166 |   }).catch((err) => {
+  167 |     console.log(err);
+
+  -> seems like there is a problem with the state and the event handler that listens & update the state

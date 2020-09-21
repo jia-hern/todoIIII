@@ -6,14 +6,15 @@ class Home extends Component {
       <React.Fragment>
         <h1>Todo list</h1>
         {/* this sections displays all todos in the list  */}
-        {this.state.list.map((item, i) => (
+        {this.props.list.map((item, i) => (
           <div key={i}>
             {/* {item[1] ? ( */}
             {item.editing ? (
               <input
+                name="editbox"
                 type="text"
-                value={this.state.editbox}
-                onChange={this.handleEditBox}
+                value={this.props.editbox}
+                onChange={this.handleChange}
               />
             ) : (
               // item[0]
@@ -45,8 +46,9 @@ class Home extends Component {
           <label>
             Write a new todo...
             <input
+              name="textbox"
               type="text"
-              value={this.state.textbox}
+              value={this.props.textbox}
               onChange={this.props.handleChange}
             />
           </label>

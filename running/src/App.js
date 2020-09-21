@@ -1,5 +1,10 @@
 import React, { Component } from "react";
-import { Switch, BrowserRouter as Router, Route } from "react-router-dom";
+import {
+  Switch,
+  BrowserRouter as Router,
+  Route,
+  Redirect,
+} from "react-router-dom";
 import "./App.css";
 import axios from "axios";
 import Axios from "axios";
@@ -22,11 +27,13 @@ class App extends Component {
     user: null,
   };
   handleChange = (event) => {
-    this.setState({ textbox: event.target.value });
+    this.setState({ [event.target.name]: event.target.value });
+    // this.setState({ textbox: event.target.value });
+    // this.setState({ editbox: event.target.value });
   };
-  handleEditBox = (event) => {
-    this.setState({ editbox: event.target.value });
-  };
+  // handleEditBox = (event) => {
+  //   this.setState({ editbox: event.target.value });
+  // };
   handleSubmit = (event) => {
     event.preventDefault();
     let temp = { ...this.state };
@@ -157,19 +164,20 @@ class App extends Component {
       });
   };
   registerHandler = (credentials) => {
-    Axios.post("http://localhost:3100/auth/register", credentials).then(
-      (res) => {
+    Axios.post("http://localhost:3100/auth/register", credentials)
+      .then((res) => {
         console.log("This is in res.data of registerHandler", res.data);
         localStorage.setItem("token", res.data.token);
         this.setState({
           isAuth: true,
-        }).catch((err) => {
-          console.log(err);
-          this.setState({ isAuth: false });
         });
-      }
-    );
+      })
+      .catch((err) => {
+        console.log(err);
+        this.setState({ isAuth: false });
+      });
   };
+
   logoutHandler = (e) => {
     e.preventDefault();
     console.log("user is logged out");
@@ -209,36 +217,69 @@ class App extends Component {
   render() {
     //we can use this line so that we do not need to write this.state infront of isAuth,user and errorMessage:
     let { isAuth, user, errorMessage } = this.state;
-    console.log(this.state.list);
+    console.log(this.state);
     return (
       <Router>
         <Navigation user={user} logout={this.logoutHandler} />
         {errorMessage && <Alert>{errorMessage}</Alert>}
         <Switch>
-          <PrivateRoute
+          {/* <PrivateRoute
             exact
             path="/"
-            isAuth={isAuth}
-            component={Home}
-            handleEditBox={this.handleEditBox}
-            handleDelete={this.handleDelete}
-            handleEdit={this.handleEdit}
-            submitEdit={this.submitEdit}
-            handleSubmit={this.handleSubmit}
-            handleChange={this.handleChange}
+            render={() => (
+              <Home
+                isAuth={isAuth}
+                handleDelete={this.handleDelete}
+                handleEdit={this.handleEdit}
+                submitEdit={this.submitEdit}
+                handleSubmit={this.handleSubmit}
+                handleChange={this.handleChange}
+              />
+            )}
+          /> */}
+          <Route
+            exact
+            path="/"
+            render={() =>
+              isAuth ? (
+                <Home
+                  handleDelete={this.handleDelete}
+                  handleEdit={this.handleEdit}
+                  submitEdit={this.submitEdit}
+                  handleSubmit={this.handleSubmit}
+                  handleChange={this.handleChange}
+                  list={this.state.list}
+                  textbox={this.state.textbox}
+                  editbox={this.state.editbox}
+                />
+              ) : (
+                <Redirect to="/login" />
+              )
+            }
           />
 
           <Route
             exact
             path="/login"
-            isAuth={isAuth}
-            render={() => <Login login={this.loginHandler} />}
+            // render={() => <Login login={this.loginHandler} isAuth={isAuth} />}
+            render={() =>
+              isAuth ? <Redirect to="/" /> : <Login login={this.loginHandler} />
+            }
           />
 
           <Route
+            exact
             path="/register"
-            isAuth={isAuth}
-            render={() => <Register register={this.registerHandler} />}
+            // render={() => (
+            //   <Register register={this.registerHandler} isAuth={isAuth} />
+            // )}
+            render={() =>
+              isAuth ? (
+                <Redirect to="/" />
+              ) : (
+                <Register register={this.registerHandler} />
+              )
+            }
           />
         </Switch>
       </Router>
