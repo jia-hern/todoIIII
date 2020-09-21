@@ -33,6 +33,8 @@ mongoose.connect(
 const todoRoutes = express.Router();
 //use router as middleware and handles all requests with path /todos (note /todos is added as a prefix to all other routes built on this)
 
+//create another instance of express router
+const authRoutes = express.Router();
 //---> to handle all the authentication routes
 //adds /auth as a prefix
 app.use("/auth", authRoutes);
@@ -59,9 +61,10 @@ authRoutes.post("/register", async (req, res) => {
       },
     };
     console.log("This is in the payload", payload);
+    //give a token to login after registering
     //https://github.com/auth0/node-jsonwebtoken
-    //token is allowed to exist for 1 hour
-    jwt.sign(payload, "registertoken", { expiresIn: 3600 }, (err, token) => {
+    //token is allowed to exist for 1 hour -> key in sign needs to match verified
+    jwt.sign(payload, "tokenisverified", { expiresIn: 3600 }, (err, token) => {
       //throw the error if any
       if (err) throw err;
       //else we send the token(containing the user._id back)
@@ -101,7 +104,7 @@ authRoutes.post("/login", async (req, res) => {
       },
     };
     //now we can use the token for jwt
-    jwt.sign(payload, "thistologin", { expiresIn: 3600 }, (err, token) => {
+    jwt.sign(payload, "tokenisverified", { expiresIn: 3600 }, (err, token) => {
       if (err) throw err;
       res.status(200).json({ token });
       console.log("Logged in,the token was sent successfully");
@@ -110,12 +113,39 @@ authRoutes.post("/login", async (req, res) => {
     res.status(500).json({ message: "The login did not work" });
   }
 });
+
+//this section does the checktoken --> needs to be above the routes that use checkToken
+//in protected routes we need to include in header: x-auth-token : full token
+const checkToken = (req, res, next) => {
+  //we want to hide the token under the header
+  const token = req.header("x-auth-token");
+  if (!token) {
+    return res.status(401).json({
+      message: "There is no token",
+    });
+  }
+  try {
+    // jwt.verify takes the token and a secretOrPublicKey
+    const decoded = jwt.verify(token, "tokenisverified");
+    // to see what is in decoded
+    console.log("This is decoded", decoded);
+    //assign the decoded token to the req.user
+    req.user = decoded.user;
+    next();
+  } catch (error) {
+    return res.status(401).json({
+      message: "The token was not valid",
+    });
+  }
+};
+
 //---> to handle all the todo routes
 app.use("/todos", todoRoutes);
 
 //this endpoint delivers all available todos items
 /* handle: GET /todos/
    DESC: retrieves all todo items
+   @access private
 */
 // todoRoutes.route('/').get(function(req,res){
 //     Todo.find(function(err,todos){
@@ -126,9 +156,10 @@ app.use("/todos", todoRoutes);
 //         }
 //     })
 // })
-todoRoutes.get("/", async (req, res) => {
+todoRoutes.get("/", checkToken, async (req, res) => {
   try {
-    let todos = await Todo.find();
+    //we want to find the todos that is created by this user -> search using the created by field
+    let todos = await Todo.find({ createdBy: req.user._id });
     // res.json(todos);
     // console.log("this is in the res", todos);
     res.status(200).json(todos);
@@ -140,6 +171,7 @@ todoRoutes.get("/", async (req, res) => {
 //this endpoint retrieves a single todo item by providing an id
 /* handle: GET /todos/:id
    DESC: retrieves single todo based on id
+   @access private
 */
 // todoRoutes.route("/:id").get(function (req, res) {
 //   let id = req.params.id;
@@ -147,7 +179,7 @@ todoRoutes.get("/", async (req, res) => {
 //     res.json(todo);
 //   });
 // });
-todoRoutes.get("/:id", async (req, res) => {
+todoRoutes.get("/:id", checkToken, async (req, res) => {
   try {
     let id = req.params.id;
     let todo = await Todo.findById(id);
@@ -161,6 +193,7 @@ todoRoutes.get("/:id", async (req, res) => {
 //this endpoint allows us to add new todo items
 /* handle: POST /todos/add
    DESC: add new todo items
+   @access private
 */
 // todoRoutes.route("/add").post(function (req, res) {
 // //the new todo is part of the HTTP POST request body => so can be accessed via req.body
@@ -174,9 +207,11 @@ todoRoutes.get("/:id", async (req, res) => {
 //       res.status(400).send("adding a new todo failed");
 //     });
 // });
-todoRoutes.post("/add", async (req, res) => {
+todoRoutes.post("/add", checkToken, async (req, res) => {
   try {
     let todo = new Todo(req.body);
+    //add the created by field into the todo
+    todo.createdBy = req.user._id;
     todo.save();
     if (todo) {
       // console.log("This is in req of /add", req);
@@ -190,6 +225,7 @@ todoRoutes.post("/add", async (req, res) => {
 //this endpoint allows us to update an existing todo item
 /* handle: POST /todos/update/:id
    DESC: update an existing todo item
+   @access private
 */
 // todoRoutes.route("/update/:id").post(function (req, res) {
 //   Todo.findById(req.params.id, function (err, todo) {
@@ -209,7 +245,7 @@ todoRoutes.post("/add", async (req, res) => {
 //   });
 // });
 
-todoRoutes.post("/update/:id", async (req, res) => {
+todoRoutes.post("/update/:id", checkToken, async (req, res) => {
   try {
     let todo = await Todo.findById(req.params.id);
     // console.log("this is req.body", req.body);
@@ -227,8 +263,9 @@ todoRoutes.post("/update/:id", async (req, res) => {
 //this endpoint allows us to delete an existing todo item
 /* handle: DELETE /todos/:id
    DESC: deleete an existing todo item
+   @access private
 */
-todoRoutes.delete("/:id", async (req, res) => {
+todoRoutes.delete("/:id", checkToken, async (req, res) => {
   try {
     let id = req.params.id;
     let deleteToDo = await Todo.findByIdAndDelete(id);

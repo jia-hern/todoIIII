@@ -1,19 +1,25 @@
 import React, { Component } from "react";
+import { Switch, BrowserRouter as Router, Route } from "react-router-dom";
 import "./App.css";
 import axios from "axios";
+import Axios from "axios";
+import { decode } from "jsonwebtoken";
+import Navigation from "./components/Navigation";
+import { Alert } from "react-bootstrap";
+import PrivateRoute from "./components/PrivateRoute";
+import Home from "./components/Home";
+import Login from "./components/Login";
+import Register from "./components/Register";
 
 class App extends Component {
   state = {
-    // list: ["one", "two"],
-    list: [
-      // to save info in this format
-      // { todo_text: "one", editing: false, edited: false },
-      // { todo_text: "two", editing: false, edited: false },
-      // ["one", false, false],
-      // ["two", false, false],
-    ],
+    list: [],
     textbox: "",
     editbox: "",
+    //for authentication
+    errorMessage: null,
+    isAuth: false,
+    user: null,
   };
   handleChange = (event) => {
     this.setState({ textbox: event.target.value });
@@ -22,12 +28,8 @@ class App extends Component {
     this.setState({ editbox: event.target.value });
   };
   handleSubmit = (event) => {
-    // to test that basic submit works
-    // alert("A new todo is to be added:" + this.state.textbox);
-    // prevents the page from being refreshed on button submission, which is the default button behavior
     event.preventDefault();
     let temp = { ...this.state };
-    // temp.list.push([this.state.textbox, false, false]);
     let newTodo = {
       todo_text: this.state.textbox,
       editing: false,
@@ -54,30 +56,18 @@ class App extends Component {
   handleEdit = (id) => {
     //to prefill the editbox to have the previous info that was stored
     this.setState({ editbox: this.state.list[id].text });
-    /* to do something like that: <button onClick={() 
-      => (this.setState({list[i][1] = true}))}>Edit</button> */
     let templist = [...this.state.list];
     //to display the form & hide original edit button
-    // templist[id][1] = true;
     templist[id].editing = true;
     // to "reset any other todos that have the forms open"
     for (let index = 0; index < templist.length; index++) {
       if (index !== id) {
-        // templist[index][1] = false;
         templist[index].editing = false;
-        // templist[index][2] = false;
         templist[index].edited = false;
       }
     }
-    //dk why the next line dont work
-    // templist = templist.splice(id, 1, {
-    //   todo_text: this.state.list[id].todo_text,
-    //   editing: true,
-    //   edited: true,
-    // });
     this.setState({ list: templist });
     //to show the confirm edit button
-    // templist[id][2] = true;
     templist[id].edited = true;
   };
   // use the editing in state as a switch to display the edit form
@@ -85,18 +75,12 @@ class App extends Component {
     //https://stackoverflow.com/questions/55149022/how-to-create-an-edit-button-in-react
     let templist = [...this.state.list];
     //to hide the form
-    // templist[id][1] = false;
     templist[id].editing = false;
     //to hide the confirm edit button
-    // templist[id][2] = false;
     templist[id].edited = false;
-    // templist[id][0] = this.state.editbox;
     templist[id].todo_text = this.state.editbox;
     this.setState({ list: templist });
 
-    // at position id, remove 1 item and put whats in editbox in its place
-    // templist = templist.splice(id, 1, this.state.editbox);
-    this.setState({ list: templist });
     //update the backend so that db has updated info of the ameneded todo
     //need to pass in the id so we use backticks
     let identity = templist[id]._id;
@@ -114,7 +98,6 @@ class App extends Component {
 
   handleDelete = (id) => {
     let templist = [...this.state.list];
-
     //update the backend
     let identity = templist[id]._id;
     axios
@@ -129,7 +112,89 @@ class App extends Component {
     templist.splice(id, 1);
     this.setState({ list: templist });
   };
+
+  /*The getuserprofile, loginhandler, registerhandle and logout handler does the authentication*/
+  getUserProfile = (token) => {
+    Axios.get(
+      "http://localhost:3100/auth/user",
+      //retrieve the user we saved in the db based on the token we have in the header
+      {
+        headers: {
+          "x-auth-token": token,
+        },
+      }
+    )
+      .then((res) => {
+        console.log("This is res.data from getUserProfile", res.data);
+        this.setState({
+          //to toggle away from login page and back to login back depending if logged in
+          isAuth: true,
+          //to display the name of user on browser in the navbar
+          user: res.data.user,
+        });
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
+  loginHandler = (credentials) => {
+    Axios.post("http://localhost:3100/auth/login", credentials)
+      .then((res) => {
+        console.log("This is in res.data of loginHandler", res.data);
+        localStorage.setItem("token", res.data.token);
+        //to get updated info on the user
+        this.getUserProfile(res.data.token);
+        this.setState({
+          isAuth: true,
+        });
+      })
+      .catch((err) => {
+        this.setState({
+          isAuth: false,
+          errorMessage: err.response.data.message,
+        });
+      });
+  };
+  registerHandler = (credentials) => {
+    Axios.post("http://localhost:3100/auth/register", credentials).then(
+      (res) => {
+        console.log("This is in res.data of registerHandler", res.data);
+        localStorage.setItem("token", res.data.token);
+        this.setState({
+          isAuth: true,
+        }).catch((err) => {
+          console.log(err);
+          this.setState({ isAuth: false });
+        });
+      }
+    );
+  };
+  logoutHandler = (e) => {
+    e.preventDefault();
+    console.log("user is logged out");
+    this.setState({
+      list: [],
+      textbox: "",
+      editbox: "",
+      errorMessage: null,
+      isAuth: false,
+      user: null,
+    });
+    localStorage.removeItem("token");
+  };
   componentDidMount() {
+    //the token stuff for authentication
+    let token = localStorage.getItem("token");
+    if (!(token == null)) {
+      let decodedToken = decode(token);
+      if (!decodedToken) {
+        localStorage.removeItem("token");
+      } else {
+        this.getUserProfile(token);
+      }
+    }
+
     //retrieve all the todos that is currently stored in the db
     axios
       .get("http://localhost:3100/todos/")
@@ -142,58 +207,42 @@ class App extends Component {
       });
   }
   render() {
+    //we can use this line so that we do not need to write this.state infront of isAuth,user and errorMessage:
+    let { isAuth, user, errorMessage } = this.state;
     console.log(this.state.list);
     return (
-      <React.Fragment>
-        <h1>Todo list</h1>
-        {/* this sections displays all todos in the list  */}
-        {this.state.list.map((item, i) => (
-          <div key={i}>
-            {/* {item[1] ? ( */}
-            {item.editing ? (
-              <input
-                type="text"
-                value={this.state.editbox}
-                onChange={this.handleEditBox}
-              />
-            ) : (
-              // item[0]
-              item.todo_text
-            )}
-            {/* hide delete button when editting to prevent accidental deletion during editing  */}
-            {!item.editing && (
-              // {!item[1] && (
-              <button onClick={() => this.handleDelete(i)}>Delete</button>
-            )}
-            {/* to hide the edit button when editting  */}
-            {!item.editing && (
-              // {!item[1] && (
-              <button onClick={() => this.handleEdit(i)}>Edit</button>
-            )}
-            {/* to show the confirm edit button after clicking edit*/}
-            {item.edited && (
-              // {item[2] && (
-              <button onClick={() => this.submitEdit(i)}>Confirm edit</button>
-            )}
-          </div>
-        ))}
+      <Router>
+        <Navigation user={user} logout={this.logoutHandler} />
+        {errorMessage && <Alert>{errorMessage}</Alert>}
+        <Switch>
+          <PrivateRoute
+            exact
+            path="/"
+            isAuth={isAuth}
+            component={Home}
+            handleEditBox={this.handleEditBox}
+            handleDelete={this.handleDelete}
+            handleEdit={this.handleEdit}
+            submitEdit={this.submitEdit}
+            handleSubmit={this.handleSubmit}
+            handleChange={this.handleChange}
+          />
 
-        {/* this section allows addition of a new todo  */}
-        <h3>Add a new todo</h3>
-        <form onSubmit={this.handleSubmit}>
-          <label>
-            Write a new todo...
-            <input
-              type="text"
-              value={this.state.textbox}
-              onChange={this.handleChange}
-            />
-          </label>
-          <input type="submit" value="Submit" />
-        </form>
-      </React.Fragment>
+          <Route
+            exact
+            path="/login"
+            isAuth={isAuth}
+            render={() => <Login login={this.loginHandler} />}
+          />
+
+          <Route
+            path="/register"
+            isAuth={isAuth}
+            render={() => <Register register={this.registerHandler} />}
+          />
+        </Switch>
+      </Router>
     );
   }
 }
-
 export default App;

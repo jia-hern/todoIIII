@@ -17,15 +17,34 @@ we need to hash the password before saving -> need to npm i bcrypt,jsonwebtoken 
 we then go to app.js to add the register and login routes
 
 For register: try the POST request
-POST http://localhost:3100//auth/register
-
+POST http://localhost:3100/auth/register
+body -> raw -> json {"phone": "1", "password": "1"} -> gives back 
+{
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjoiNWY2NDEwOGE4ZmVhYjIwOTQ4N2VmYmVjIn0sImlhdCI6MTYwMDM5MzM1NCwiZXhwIjoxNjAwMzk2OTU0fQ.DzbPhyArEzbFGaIg4RUd1XOuE3vUp0pz6hTAM90Adiw"
+}
+in robo3T -> there is a new user under collections->users
 
 For login: try the POST request
-POST http://localhost:3100//auth/login
+POST http://localhost:3100/auth/login
+body -> raw -> json {"phone": "1", "password": "1"} -> gives back 
+{
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjoiNWY2NDEwOGE4ZmVhYjIwOTQ4N2VmYmVjIn0sImlhdCI6MTYwMDM5MzM1NCwiZXhwIjoxNjAwMzk2OTU0fQ.DzbPhyArEzbFGaIg4RUd1XOuE3vUp0pz6hTAM90Adiw"
+}
 
+//so we have verified that the register and login works
 
+so now we should put the authentication accessing on the following routes:
+GET /todos/
+GET /todos/:id
+POST /todos/add
+POST /todos/update/:id
+DELETE /todos/:id
+
+--> need to debug the routes as getting an error  "message": "The token was not valid"
+-> go dissect node-react-demo-ebere 1st
 -> then do the axios calls to register, login and logout
 
+added getUserProfile, login,register,logout handler -> need to turn things in App.js into a <Home/> component as getting very long
 
 
 
