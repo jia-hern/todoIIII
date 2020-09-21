@@ -41,13 +41,15 @@ POST /todos/update/:id
 DELETE /todos/:id
 
 --> need to debug the routes as getting an error  "message": "The token was not valid"
--> go dissect node-react-demo-ebere 1st
+-->debugged by changing the key in .sign(in register & login) to match the key in .verify (in checkToken)
 -> then do the axios calls to register, login and logout
+-> need to tag the user.id when creating each new todo
 
 added getUserProfile, login,register,logout handler -> need to turn things in App.js into a <Home/> component as getting very long
 
+trying to log in on App.js just gives "Logged in,the token was sent successfully" repeatedly
 
-
+but it bounces between Help! someone wants to hack us/ user not found
 
 
 

@@ -29,6 +29,37 @@ mongoose.connect(
     console.log("mongodb connected!"); //to say mongodb is connected if nth wrong
   }
 );
+
+//this section does the checktoken --> needs to be above the routes that use checkToken
+//in protected routes we need to include in header: x-auth-token : full token
+const checkToken = (req, res, next) => {
+  //we want to hide the token under the header
+  const token = req.header("x-auth-token");
+  if (!token) {
+    return res.status(401).json({
+      message: "There is no token",
+    });
+  }
+  try {
+    // jwt.verify takes the token and a secretOrPublicKey
+    const decoded = jwt.verify(token, "tokenisverified");
+    // to see what is in decoded
+    // console.log("This is decoded", decoded);
+    // This is decoded {
+    //   user: { id: '5f64108a8feab209487efbec' },
+    //   iat: 1600655659,
+    //   exp: 1600659259
+    // }
+    //assign the decoded token(which is) to the req.user
+    req.user = decoded.user;
+    next();
+  } catch (error) {
+    return res.status(401).json({
+      message: "The token was not valid",
+    });
+  }
+};
+
 //create instance of express router
 const todoRoutes = express.Router();
 //use router as middleware and handles all requests with path /todos (note /todos is added as a prefix to all other routes built on this)
@@ -107,37 +138,27 @@ authRoutes.post("/login", async (req, res) => {
     jwt.sign(payload, "tokenisverified", { expiresIn: 3600 }, (err, token) => {
       if (err) throw err;
       res.status(200).json({ token });
-      console.log("Logged in,the token was sent successfully");
+      // console.log("Logged in,the token was sent successfully");
     });
   } catch (error) {
     res.status(500).json({ message: "The login did not work" });
   }
 });
 
-//this section does the checktoken --> needs to be above the routes that use checkToken
-//in protected routes we need to include in header: x-auth-token : full token
-const checkToken = (req, res, next) => {
-  //we want to hide the token under the header
-  const token = req.header("x-auth-token");
-  if (!token) {
-    return res.status(401).json({
-      message: "There is no token",
-    });
-  }
+/*this endpoint let us get info about the user when we call getUserProfile in App.js 
+@route POST /auth/user
+@acess private
+*/
+authRoutes.get("/user", checkToken, async (req, res) => {
   try {
-    // jwt.verify takes the token and a secretOrPublicKey
-    const decoded = jwt.verify(token, "tokenisverified");
-    // to see what is in decoded
-    console.log("This is decoded", decoded);
-    //assign the decoded token to the req.user
-    req.user = decoded.user;
-    next();
+    let user = await User.findById(req.user.id, "-password");
+    res.status(200).json({ user });
   } catch (error) {
-    return res.status(401).json({
-      message: "The token was not valid",
+    res.status(500).json({
+      message: "something went wrong in authRoute.get user",
     });
   }
-};
+});
 
 //---> to handle all the todo routes
 app.use("/todos", todoRoutes);
