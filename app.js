@@ -177,10 +177,12 @@ app.use("/todos", todoRoutes);
 //         }
 //     })
 // })
+// todoRoutes.get("/", async (req, res) => {
 todoRoutes.get("/", checkToken, async (req, res) => {
   try {
     //we want to find the todos that is created by this user -> search using the created by field
-    let todos = await Todo.find({ createdBy: req.user._id });
+    // let todos = await Todo.find();
+    let todos = await Todo.find({ createdBy: req.user.id });
     // res.json(todos);
     // console.log("this is in the res", todos);
     res.status(200).json(todos);
@@ -232,7 +234,7 @@ todoRoutes.post("/add", checkToken, async (req, res) => {
   try {
     let todo = new Todo(req.body);
     //add the created by field into the todo
-    todo.createdBy = req.user._id;
+    todo.createdBy = req.user.id;
     todo.save();
     if (todo) {
       // console.log("This is in req of /add", req);

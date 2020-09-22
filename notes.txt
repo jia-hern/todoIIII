@@ -98,3 +98,7 @@ C:/Users/Ji/projects/Todo/todoIIII/running/src/App.js:164
   167 |     console.log(err);
 
   -> seems like there is a problem with the state and the event handler that listens & update the state
+  and that it messes with the mognodb connection.
+  reinstalling mondodb helps.
+
+so we testing the checktoken works, but its req.user.id as thats what we get back from decoded.user
