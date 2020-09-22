@@ -55,7 +55,7 @@ const checkToken = (req, res, next) => {
     next();
   } catch (error) {
     return res.status(401).json({
-      message: "The token was not valid",
+      message: "The token was not valid or expired",
     });
   }
 };
@@ -204,9 +204,12 @@ todoRoutes.get("/", checkToken, async (req, res) => {
 // });
 todoRoutes.get("/:id", checkToken, async (req, res) => {
   try {
+    //use this id to identify the specific todo
     let id = req.params.id;
-    let todo = await Todo.findById(id);
-    // res.json(todo);
+    //find all todos created by the user.--> if await fails goes to catch
+    let todos = await Todo.find({ _id: id });
+    //go through the todos array to find the one with this id provided it exist --> if await fails goes to catch
+    let todo = await todos.find((element) => element.createdBy == req.user.id);
     res.status(200).json(todo);
   } catch (error) {
     console.log(error);
@@ -270,13 +273,15 @@ todoRoutes.post("/add", checkToken, async (req, res) => {
 
 todoRoutes.post("/update/:id", checkToken, async (req, res) => {
   try {
-    let todo = await Todo.findById(req.params.id);
-    // console.log("this is req.body", req.body);
-    //this is req.body { todo_text: 'test 1 nasdfasdfadsfas' }
+    let id = req.params.id;
+    //find all todos created by the user.--> if await fails goes to catch
+    let todos = await Todo.find({ createdBy: req.user.id });
+    //go through the todos array to find the one with this id provided it exist --> if await fails goes to catch
+    let todo = await todos.find((element) => element._id == id);
     todo.todo_text = req.body.todo_text;
     todo.save();
     if (todo) {
-      res.status(200).send("Todo updated!");
+      res.status(200).json({ message: "Todo updated!" });
     }
   } catch {
     res.status(400).send("Update is not possible");
@@ -291,11 +296,13 @@ todoRoutes.post("/update/:id", checkToken, async (req, res) => {
 todoRoutes.delete("/:id", checkToken, async (req, res) => {
   try {
     let id = req.params.id;
+    // let deleteToDo = await Todo.findByIdAndDelete({ createdBy: req.user.id });
     let deleteToDo = await Todo.findByIdAndDelete(id);
     if (deleteToDo) {
       res.status(200).send("Todo was deleted successfully");
     }
   } catch (error) {
+    console.log(error);
     res.status(500).send("Did not delete the todo with that id");
   }
 });

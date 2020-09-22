@@ -102,3 +102,12 @@ C:/Users/Ji/projects/Todo/todoIIII/running/src/App.js:164
   reinstalling mondodb helps.
 
 so we testing the checktoken works, but its req.user.id as thats what we get back from decoded.user
+
+essentially what we are doing is that we create a token whenver a user logins and register -> we save the id of the user in that token -> we then protect all the routes and use that token/id to retrieve info just for that user
+
+updated with checkToken:
+ register, login,add todo, get all todos, get todo with id, update
+
+ get single todo breaks when trying to createdBy does not match req.user.id
+ delete todo hinges on mongoose which accepts mongoose model
+ update todo may have unknown bugs
