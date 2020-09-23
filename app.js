@@ -207,10 +207,12 @@ todoRoutes.get("/:id", checkToken, async (req, res) => {
     //use this id to identify the specific todo
     let id = req.params.id;
     //find all todos created by the user.--> if await fails goes to catch
-    let todos = await Todo.find({ _id: id });
-    //go through the todos array to find the one with this id provided it exist --> if await fails goes to catch
-    let todo = await todos.find((element) => element.createdBy == req.user.id);
-    res.status(200).json(todo);
+    let todo = await Todo.find({
+      $and: [{ createdBy: req.user.id }, { _id: id }],
+    });
+    if (todo) {
+      res.status(200).json(todo);
+    }
   } catch (error) {
     console.log(error);
     res.status(500).send("Did not managed to get a single todo with this id");

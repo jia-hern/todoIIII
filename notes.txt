@@ -108,6 +108,6 @@ essentially what we are doing is that we create a token whenver a user logins an
 updated with checkToken:
  register, login,add todo, get all todos, get todo with id, update
 
- get single todo breaks when trying to createdBy does not match req.user.id
- delete todo hinges on mongoose which accepts mongoose model
- update todo may have unknown bugs
+single todo is okay now -> id req.params.id dont match, goes to error, wrong token goes to empty array
+delete -> wrong token gives back the message, possibly because an empty array was returned.
+for now delete and update would be implemented without checking for the createdBy field
