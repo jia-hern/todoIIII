@@ -111,3 +111,105 @@ updated with checkToken:
 single todo is okay now -> id req.params.id dont match, goes to error, wrong token goes to empty array
 delete -> wrong token gives back the message, possibly because an empty array was returned.
 for now delete and update would be implemented without checking for the createdBy field
+
+
+so know we want to fix the frontend to avoid the glitch of making endless api calls and setting states.
+currently App contains <Home/>, <Login/>, <Register/>, <Navigation/>
+all the handle changes should just be in their own components.
+
+In Ebere's code, lets tracks where all the CRUD operations are written in the frontend/Axios calls
+C: In <AddItem/> (under App.js) function called submitHandler -> does Axios.post. Has a redirect based on this.state.status
+
+R: In <Item /> (under App.js) function called getItem -> does the Axios.get
+
+U: In <Item /> (under App.js) function called editItems -> does the Axios.put. function called showEdit is used to show <EditItem/>
+
+D: In <Home/> (under App.js) function called deleteItem -> does Axios.delete -> then call fetchItems -> which does Axios.get all 
+
+So lets look at our code and what we want to do.
+We want to do the creating of a new todo under Home
+We want to be able to access each todo from the Home
+Upon accessing each todo, we want to be able to update or delete it
+C: In <AddItem/> -> Can be accessed via <Link to .../> from <Navigation/>
+R: In <Item/> -> use <Link to.../> for each item in <Home/> to be able to access it
+U: In <EditItem/> use state in <Item/> to display <EditItem/>
+D: In <Home/> -> use .map & ._id to be able to tag each item to the axios.delete
+
+For the state & functions, lets look at whats passed down and what is handled locally
+
+<App/>
+Contains: 
+state = {
+    items: [],
+    errorMessage: null, --> <Navigation/>
+    isAuth: false, --> <Home/> <AddItem/>(new) <Item/> <Login/> <Register/> (new)
+    user: null, --> <Navigation/>
+  };
+logoutHandler --> <Navigation/>
+getUserProfile --> didMount, loginHandler
+loginHandler --> <Login/>
+registerHandler --> <Register/>
+
+<Navigation/>  takes in: user, logoutHandler
+
+<Login/>  takes in: loginHandler
+Contains: 
+state = {
+    phone: "",
+    password: "",
+  };
+changeHandler (local)
+(can omit rewriting loginHandler and just pass in this.state)
+
+<Register/>  takes in: registerHandler
+Contains: 
+state = {
+    phone: "",
+    password: "",
+  };
+changeHandler (local)
+
+(can omit rewriting registerHandler and just pass in this.state)
+
+<Home/>  takes in: isAuth
+Contains: 
+state = {
+    item: null,
+    edit: false,
+  };
+fetchItems (local)
+deleteItem (local)
+
+<AddItem/>  takes in: isAuth (new)
+Contains: 
+state = { (new, has to match my backend)
+    //we should not be saving states to the backend
+    todo_text: "",
+    //below is added to cause a redirect
+    status:false
+  };
+changeHandler (local)
+submitHandler (local)
+
+<Item/>  takes in: isAuth
+Contains: 
+state = {
+    items: [],
+  };
+showEdit (local)
+editItem (local)
+getItem (local)
+<EditItem/> --> pass on item & this.editItem
+
+<EditItem/>  takes in: item & this.editItem
+Contains: 
+state = {
+    todo_text: this.props.item.todo_text,
+  };
+changeHandler (local)
+submitHandler (local)
+
+fixed: App.js, AddItem, Navigation, Item,EditItem, Home, Login, Register
+
+
+still get repeated error of POST http://localhost:3100/auth/login 400 (Bad request)

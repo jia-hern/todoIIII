@@ -99,7 +99,9 @@ authRoutes.post("/register", async (req, res) => {
       //throw the error if any
       if (err) throw err;
       //else we send the token(containing the user._id back)
-      res.status(200).json({ token });
+      res
+        .status(200)
+        .json({ token, message: "user was registered successfully" });
       console.log("Registered,the token was sent successfully");
     });
   } catch (error) {
